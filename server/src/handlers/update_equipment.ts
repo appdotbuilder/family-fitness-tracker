@@ -1,14 +1,42 @@
 
+import { db } from '../db';
+import { equipmentTable } from '../db/schema';
 import { type UpdateEquipmentInput, type Equipment } from '../schema';
+import { eq } from 'drizzle-orm';
 
 export const updateEquipment = async (input: UpdateEquipmentInput): Promise<Equipment> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is updating existing exercise equipment in the database.
-    return Promise.resolve({
-        id: input.id,
-        name: input.name || 'Updated Equipment',
-        description: input.description !== undefined ? input.description : null,
-        category: input.category !== undefined ? input.category : null,
-        created_at: new Date() // Placeholder date
-    } as Equipment);
+  try {
+    // Build update object with only provided fields
+    const updateData: Partial<{
+      name: string;
+      description: string | null;
+      category: string | null;
+    }> = {};
+
+    if (input.name !== undefined) {
+      updateData.name = input.name;
+    }
+    if (input.description !== undefined) {
+      updateData.description = input.description;
+    }
+    if (input.category !== undefined) {
+      updateData.category = input.category;
+    }
+
+    // Update equipment record
+    const result = await db.update(equipmentTable)
+      .set(updateData)
+      .where(eq(equipmentTable.id, input.id))
+      .returning()
+      .execute();
+
+    if (result.length === 0) {
+      throw new Error(`Equipment with id ${input.id} not found`);
+    }
+
+    return result[0];
+  } catch (error) {
+    console.error('Equipment update failed:', error);
+    throw error;
+  }
 };

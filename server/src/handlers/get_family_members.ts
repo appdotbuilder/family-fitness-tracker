@@ -1,8 +1,17 @@
 
+import { db } from '../db';
+import { familyMembersTable } from '../db/schema';
 import { type FamilyMember } from '../schema';
 
 export const getFamilyMembers = async (): Promise<FamilyMember[]> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is fetching all family members from the database.
-    return [];
+  try {
+    const result = await db.select()
+      .from(familyMembersTable)
+      .execute();
+
+    return result;
+  } catch (error) {
+    console.error('Failed to fetch family members:', error);
+    throw error;
+  }
 };

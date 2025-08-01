@@ -1,16 +1,49 @@
 
+import { db } from '../db';
+import { workoutsTable } from '../db/schema';
 import { type UpdateWorkoutInput, type Workout } from '../schema';
+import { eq } from 'drizzle-orm';
 
 export const updateWorkout = async (input: UpdateWorkoutInput): Promise<Workout> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is updating an existing workout session in the database.
-    return Promise.resolve({
-        id: input.id,
-        family_member_id: 1, // Placeholder - would need to be fetched from existing record
-        name: input.name || 'Updated Workout',
-        duration_minutes: input.duration_minutes !== undefined ? input.duration_minutes : null,
-        notes: input.notes !== undefined ? input.notes : null,
-        workout_date: input.workout_date || new Date(),
-        created_at: new Date() // Placeholder date
-    } as Workout);
+  try {
+    // Build update object with only provided fields
+    const updateData: any = {};
+    
+    if (input.name !== undefined) {
+      updateData.name = input.name;
+    }
+    
+    if (input.duration_minutes !== undefined) {
+      updateData.duration_minutes = input.duration_minutes;
+    }
+    
+    if (input.notes !== undefined) {
+      updateData.notes = input.notes;
+    }
+    
+    if (input.workout_date !== undefined) {
+      updateData.workout_date = input.workout_date;
+    }
+
+    // Update the workout
+    const result = await db.update(workoutsTable)
+      .set(updateData)
+      .where(eq(workoutsTable.id, input.id))
+      .returning()
+      .execute();
+
+    if (result.length === 0) {
+      throw new Error(`Workout with id ${input.id} not found`);
+    }
+
+    // Convert workout_date from string to Date for return type
+    const workout = result[0];
+    return {
+      ...workout,
+      workout_date: new Date(workout.workout_date)
+    };
+  } catch (error) {
+    console.error('Workout update failed:', error);
+    throw error;
+  }
 };
